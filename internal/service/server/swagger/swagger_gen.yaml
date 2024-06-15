@@ -1,0 +1,50 @@
+components:
+  securitySchemes:
+    AuthorizationHeader:
+      description: Input your token
+      scheme: bearer
+      type: http
+info:
+  description: send dmx messages to control lights
+  license:
+    name: GPLv3
+  title: dmx_light_ctrl rest api
+  version: 1.0.0
+openapi: 3.0.0
+paths:
+  /api/example/{exampleID}/example:
+    get:
+      description: ' Get example.'
+      parameters:
+      - description: Id of example
+        example: "120"
+        in: path
+        name: exampleID
+        required: true
+        schema:
+          description: Id of example
+          format: int64
+          type: integer
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: example JSON
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: example JSON
+      summary: Get example
+      tags:
+      - example
+security:
+- AuthorizationHeader:
+  - read
+  - write
+servers:
+- description: ' local_network'
+  url: http://raspberrypi.local
