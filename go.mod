@@ -6,6 +6,7 @@ require (
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
+	github.com/stianeikeland/go-rpio/v4 v4.6.0
 )
 
 require (

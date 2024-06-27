@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/chack93/dmx_light_ctrl/internal/service/config"
+	"github.com/chack93/dmx_light_ctrl/internal/service/demo_svc"
+	"github.com/chack93/dmx_light_ctrl/internal/service/dmx_svc"
 	"github.com/chack93/dmx_light_ctrl/internal/service/logger"
-	"github.com/chack93/dmx_light_ctrl/internal/service/server"
 )
 
 var log = logger.Get()
@@ -19,13 +20,24 @@ func main() {
 		log.Fatalf("log init failed, err: %v", err)
 	}
 
-	log.Infof("ALL DONE!!!: %v", time.Now().Format(time.RFC3339))
-
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
-	if err := server.New().Init(wg); err != nil {
-		log.Fatalf("server init failed, err: %v", err)
+	if err := dmx_svc.Get().Init(wg); err != nil {
+		log.Fatalf("dmx svc init failed, err: %v", err)
 	}
+	wg.Add(1)
+	if err := demo_svc.Get().Init(wg); err != nil {
+		log.Fatalf("demo svc init failed, err: %v", err)
+	}
+	/*
+			wg.Add(1)
+			if err := server.New().Init(wg); err != nil {
+				log.Fatalf("server init failed, err: %v", err)
+			}
+		//wg.Wait()
+	*/
 
-	wg.Wait()
+	for true {
+		time.Sleep(1 * time.Second)
+	}
 }

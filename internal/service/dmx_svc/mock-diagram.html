@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" class="w-screen h-screen bg-slate-50">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Logic Diagram" />
+  <title>Logic Diagram</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+<script>
+  const TIME_FACTOR = 10
+  window.dataJson = {JSON_DATA}
+  window.dataZoom = 1
+  window.dataRenderTimeout = undefined
+
+  function renderElement(start, end, value, dbgMsg = "") {
+    start *= window.dataZoom
+    end *= window.dataZoom
+    const border = value > 0 ? 'border-t-2  border-x-2' : 'border-b-2'
+    const clas = `absolute ${border} border-inherit h-full`
+    const style = `left: ${start}px; width: ${end-start}px`
+    return `<div class="${clas}" style="${style}"><div class="absolute -rotate-90 text-nowrap top-1/2">${dbgMsg}</div></div>`
+  }
+  function renderTimeElement(ms) {
+    const style = `width: 0px; left: ${ms}px`
+    return `<div class="absolute" style="${style}">${Math.floor(ms/TIME_FACTOR)}ms</div>`
+  }
+  function renderDiagram() {
+    if (window.dataRenderTimeout) {
+      return
+    }
+    window.dataRenderTimeout = setTimeout(() => {
+      window.dataRenderTimeout = undefined
+    }, 240)
+    // requestAnimationFrame(() => {})
+    const dataLength = dataJson.length
+    const elementsHtml = dataJson
+      .map((el, idx, arr) => {
+        const nextEl = arr[idx+1] ?? el
+        const start = el.time
+        const end = nextEl.time
+        const value = el.data
+        const dbgMsg = el.dbgMsg
+        return {start, end, value, dbgMsg}
+      })
+      .map(({start, end, value, dbgMsg}) => renderElement(start, end, value, dbgMsg))
+    .join("")
+    window.diagram.innerHTML = renderElement(0, dataJson[0].time, 0) + elementsHtml
+   
+    const lastItem = dataJson[dataJson.length-1].time
+    let timeLineHtml = ""
+    for (let i = 0; i < lastItem; i++) {
+      if (i % Math.floor(100 * window.dataZoom) === 0) {
+        timeLineHtml += renderTimeElement(i)
+      }
+    }
+    window.timeline.innerHTML = timeLineHtml
+    //window.diagram.scrollLeft *= window.dataZoom
+    window.timeline.scrollLeft = window.diagram.scrollLeft
+  }
+  function wheelHandler(e) {
+    // positive => zoom out & vice versa
+    const newZoom = Math.max(0.001, ((window.dataZoom * 1000) + (e.deltaY * -1)) / 1000)
+    if (newZoom != window.dataZoom) {
+      window.dataZoom = newZoom
+    }
+    renderDiagram()
+  }
+  function scrollHandler(e) {
+    window.timeline.scrollLeft = window.diagram.scrollLeft
+  }
+  function pointermoveHandler(e) {
+    window.pointer.style.top = `${e.y}px`
+    window.pointer.style.left = `${e.x}px`
+    const ms = Math.floor(window.diagram.scrollLeft + e.x) / TIME_FACTOR
+    window.pointer.innerHTML = `${ms}ms`
+  }
+  function setZoom(z) {
+    window.dataZoom = z
+    renderDiagram()
+  }
+  window.onload = () => {
+    window.diagram.addEventListener("wheel", wheelHandler)
+    window.diagram.addEventListener("scroll", scrollHandler)
+    window.diagram.addEventListener("pointermove", pointermoveHandler)
+    renderDiagram()
+    /*
+    setTimeout(() => {
+      setZoom(window.diagram.clientWidth / window.diagram.scrollWidth)
+    }, 1000)
+    */
+  };
+</script>
+  <main class="">
+    <div class="max-w-full bg-slate-100 py-2">
+      <div id="diagram" class="relative h-24  overflow-x-scroll border-zinc-900"></div>
+      <div id="timeline" class="relative h-8 overflow-hidden bg-slate-300"></div>
+      <div id="pointer" class="absolute min-w-1 min-h-1 mt-3 pointer-events-none bg-slate-100 text-slate-900"></div>
+      <div class="m-2 flex gap-2">
+        <button class="p-2 rounded shadow bg-slate-200" onClick="setZoom(1)">Reset Zoom</button>
+        <button class="p-2 rounded shadow bg-slate-200" onClick="setZoom(window.dataZoom * 0.95)">-</button>
+        <button class="p-2 rounded shadow bg-slate-200" onClick="setZoom(window.dataZoom * 1.05)">+</button>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

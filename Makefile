@@ -71,5 +71,6 @@ deploy: build
 .PHONY: run
 run: deploy
 	ssh ${REMOTE} ' \
-		~/${APP_NAME} \
+		killall ${APP_NAME}; \
+		~/${APP_NAME}; \
 		'

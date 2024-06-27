@@ -56,7 +56,7 @@ func (srv *Server) Init(wg *sync.WaitGroup) error {
 	srv.echo.Use(middleware.Logger())
 	srv.echo.Use(middleware.Recover())
 
-	baseURL := "/api/go_base"
+	baseURL := "/api"
 	apiGroup := srv.echo.Group(baseURL)
 	apiGroup.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, struct {
@@ -77,7 +77,7 @@ func (srv *Server) Init(wg *sync.WaitGroup) error {
 	address := fmt.Sprintf("%s:%s", viper.GetString("server.host"), viper.GetString("server.port"))
 	go func() {
 		if err := srv.echo.Start(address); err != nil && err != http.ErrServerClosed {
-			log.Warnf("server start failed, err: %v", err)
+			log.Errorf("server start failed, err: %v", err)
 			wg.Done()
 		}
 	}()
