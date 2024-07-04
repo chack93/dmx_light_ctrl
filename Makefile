@@ -1,76 +1,48 @@
 APP_NAME = dmx_light_ctrl
 VERSION = 1.0.0
-HOST ?= 127.0.0.1
-PORT ?= 8080
-REMOTE ?= pi@raspberrypi.local
-GOOS ?= linux
-GOARCH ?= arm
-GOARM ?= 5
-IMAGE_URL ?= "https://downloads.raspberrypi.com/raspios_oldstable_armhf/images/raspios_oldstable_armhf-2024-03-12/2024-03-12-raspios-bullseye-armhf.img.xz"
-SD_CARD ?= ""
 
 .PHONY: help
 help:
 	@echo "make options\n\
-		- all             clean, deps, docs, test, vet, fmt, lint & build\n\
-		- deps            fetch all dependencies\n\
+		- all             clean, cmake, build, flash\n\
 		- clean           clean build directory bin/\n\
-		- build_local     build binary for local testing bin/local_${APP_NAME}\n\
-		- build           build binary for raspberry deployment bin/${APP_NAME}\n\
-		- test            run test cases\n\
-		- run_local       run localy at HOST:PORT ${HOST}:${PORT}\n\
-		- run             run binary on ${REMOTE}\n\
-		- deploy          build & push latest binary to REMOTE:${REMOTE}\n\
+		- cmake           run cmake & create build dir\n\
+		- cmake-dbg       run cmake with debug flag & create build dir\n\
+		- build           build binary\n\
+		- flash           copy built binary to /Volumes/RPI-RP2\n\
+		- deploy          build & flash\n\
+		- deploy-dbg      build debug bin & flash\n\
 		- help            display this message"
 
 .PHONY: all
-all: clean deps test vet fmt lint build
-
-.PHONY: deps
-deps:
-	go mod tidy -compat 1.17
-
-.PHONY: docs
-docs:
-	${GOPATH}/bin/go-swagger3 --module-path . --main-file-path ./internal/service/server/server.go --output ./internal/service/server/swagger/swagger_gen.yaml --schema-without-pkg --generate-yaml true
+all: clean cmake build flash
 
 .PHONY: clean
 clean:
-	go clean
-	rm -rf bin
+	rm -rf build
 
-.PHONY: build_local
-build_local: docs
-	CGO_ENABLED=0 go build -o bin/local_${APP_NAME} cmd/local/main.go
+.PHONY: cmake
+cmake: clean
+	mkdir build
+	(cd build && cmake ..)
+
+.PHONY: cmake-dbg
+cmake-dbg: clean
+	mkdir build
+	(cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..)
 
 .PHONY: build
-build: docs
-	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} GOARM=${GOARM} go build -o bin/${APP_NAME} cmd/raspberry/main.go
+build:
+	(cd build && make)
 
-.PHONY: test
-test: build
-	go test ./...
-
-vet:
-	go vet ./...
-
-fmt:
-	go list -f '{{.Dir}}' ./... | grep -v /vendor/ | xargs -L1 gofmt -l
-
-lint:
-	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
-
-.PHONY: run_local
-run_local: build_local
-	HOST=${HOST} PORT=${PORT} bin/local_${APP_NAME}
+.PHONY: flash
+flash: |
+	cp build/dmx_light_ctrl.uf2 /Volumes/RPI-RP2/. || \
+		sudo openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000" -c "program build/dmx_light_ctrl.elf verify reset exit"
 
 .PHONY: deploy
-deploy: build
-	rsync -Pa bin/${APP_NAME} ${REMOTE}:~/${APP_NAME}
+deploy: build flash
 
-.PHONY: run
-run: deploy
-	ssh ${REMOTE} ' \
-		killall ${APP_NAME}; \
-		~/${APP_NAME}; \
-		'
+.PHONY: deploy-dbg
+deploy-dbg: cmake-dbg build flash
+	openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000" -c "program build/dmx_light_ctrl.elf verify reset exit"
