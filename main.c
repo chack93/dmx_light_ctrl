@@ -1,50 +1,69 @@
-//#include <stdio.h>
-#include "hardware/pio.h"
-#include "hardware/timer.h"
-#include "pico/cyw43_arch.h"
-#include "pico/stdlib.h"
-#include "pico/cyw43_arch.h"
+#include <stdint.h>
+#include <stdio.h>
 
-int main() {
-    stdio_init_all();
-    if (cyw43_arch_init()) {
-        //printf("Wi-Fi init failed");
-        return -1;
-    }
-    while (true) {
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-        sleep_us(500000);
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-        sleep_us(1500000);
-    }
-}
+#define DMX_SVC_DEVICE_LENGTH 36
+#define LEVEL 1.0
+typedef struct {
+  uint8_t red;
+  uint8_t green;
+  uint8_t blue;
+  uint8_t white;
+} DmxSvc_lightDevice;
+extern DmxSvc_lightDevice dmxSvc_list[];
 
-
-// TODO:
-// 1. make channel list 512
-// 2. led demo function
-// 3. dmx channel worker
-// 4. dmx protocol writer
-
-/*
-int64_t alarm_callback(alarm_id_t id, void *user_data) {
-    // Put your timeout handler code in here
-    return 0;
-}
-
-
-
+int testFnStatic();
+int testFnRainbow();
 int main()
 {
-    stdio_init_all();
 
+  testFnStatic();
 
-    // Timer example code - This example fires off the callback after 2000ms
-    add_alarm_in_ms(2000, alarm_callback, NULL, false);
-
-
-    puts("Hello, world!");
-
-    return 0;
+  return 0;
+  for (int i = 0; i < 255; i++) {
+    testFnRainbow();
+  }
+  return 0;
 }
-*/
+
+int DmxSvc_setLedColor(int led, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
+{
+  printf("led: %d, %02x%02x%02x\n", led, red, green, blue);
+  return 0;
+}
+
+static int demoSvc_colorIdx = 0;
+int testFnStatic()
+{
+  for (int i = 0; i < DMX_SVC_DEVICE_LENGTH; i++) {
+    uint8_t red = (i  + demoSvc_colorIdx) % 3 == 0 ? 255 : 0;
+    uint8_t green = (i  + demoSvc_colorIdx) % 3 == 1 ? 255 : 0;
+    uint8_t blue = (i  + demoSvc_colorIdx) % 3 == 2 ? 255 : 0;
+
+    red *= LEVEL;
+    green *= LEVEL;
+    blue *= LEVEL;
+    uint8_t white = 0;
+    DmxSvc_setLedColor(i, red, green, blue, white);
+  }
+  demoSvc_colorIdx = demoSvc_colorIdx + 1;
+  return 0;
+}
+
+int testFnRainbow()
+{
+  for (int i = 0; i < DMX_SVC_DEVICE_LENGTH; i++) {
+    const uint8_t third = 255 / 3;
+
+    uint8_t red = demoSvc_colorIdx + (third * (i % 3));
+    uint8_t green = demoSvc_colorIdx + (third * (i % 3));
+    uint8_t blue = demoSvc_colorIdx + (third * (i % 3));
+
+    red *= LEVEL;
+    green *= LEVEL;
+    blue *= LEVEL;
+    uint8_t white = 0;
+    DmxSvc_setLedColor(i, red, green, blue, white);
+  }
+  demoSvc_colorIdx = demoSvc_colorIdx + 1;
+  return 0;
+}

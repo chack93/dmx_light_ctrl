@@ -45,4 +45,9 @@ deploy: build flash
 
 .PHONY: deploy-dbg
 deploy-dbg: cmake-dbg build flash
-	openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000" -c "program build/dmx_light_ctrl.elf verify reset exit"
+	sudo openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000"
+	# gdb build/dmx_light_ctrl.elf
+	# sudo openocd -f interface/cmsis-dap.cfg -f target/rp2040.cfg -c "adapter speed 5000"
+	# target remote localhost:3333
+	# monitor reset init
+	# continue
